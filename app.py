@@ -1,9 +1,16 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
 from datetime import datetime, timedelta
 import json
+
+# Import plotly with error handling
+try:
+    import plotly.graph_objects as go
+    import plotly.express as px
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
+    st.warning("⚠️ Plotly غير مثبت. سيتم استخدام الرسوم البيانية الأساسية من Streamlit.")
 
 # إعدادات الصفحة
 st.set_page_config(
@@ -227,42 +234,59 @@ if page == "🏠 لوحة التحكم":
                 revenue_data.append(rev)
                 expense_data.append(exp)
             
-            # رسم بياني خطي
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=[d.strftime('%a') for d in dates],
-                y=revenue_data,
-                name='الإيرادات',
-                line=dict(color='#27ae60', width=3),
-                fill='tozeroy'
-            ))
-            fig.add_trace(go.Scatter(
-                x=[d.strftime('%a') for d in dates],
-                y=expense_data,
-                name='المصروفات',
-                line=dict(color='#e74c3c', width=3),
-                fill='tozeroy'
-            ))
-            fig.update_layout(
-                height=400,
-                showlegend=True,
-                hovermode='x unified',
-                plot_bgcolor='white'
-            )
-            st.plotly_chart(fig, use_container_width=True)
+            if PLOTLY_AVAILABLE:
+                # رسم بياني خطي
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=[d.strftime('%a') for d in dates],
+                    y=revenue_data,
+                    name='الإيرادات',
+                    line=dict(color='#27ae60', width=3),
+                    fill='tozeroy'
+                ))
+                fig.add_trace(go.Scatter(
+                    x=[d.strftime('%a') for d in dates],
+                    y=expense_data,
+                    name='المصروفات',
+                    line=dict(color='#e74c3c', width=3),
+                    fill='tozeroy'
+                ))
+                fig.update_layout(
+                    height=400,
+                    showlegend=True,
+                    hovermode='x unified',
+                    plot_bgcolor='white'
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                # Fallback: استخدام Streamlit line chart
+                chart_df = pd.DataFrame({
+                    'التاريخ': [d.strftime('%a') for d in dates],
+                    'الإيرادات': revenue_data,
+                    'المصروفات': expense_data
+                })
+                st.line_chart(chart_df.set_index('التاريخ'))
         
         with col2:
             st.subheader("🥧 توزيع الإيرادات والمصروفات")
             
-            # رسم دائري
-            fig = go.Figure(data=[go.Pie(
-                labels=['الإيرادات', 'المصروفات'],
-                values=[total_revenue, total_expense],
-                marker=dict(colors=['#27ae60', '#e74c3c']),
-                hole=0.4
-            )])
-            fig.update_layout(height=400)
-            st.plotly_chart(fig, use_container_width=True)
+            if PLOTLY_AVAILABLE:
+                # رسم دائري
+                fig = go.Figure(data=[go.Pie(
+                    labels=['الإيرادات', 'المصروفات'],
+                    values=[total_revenue, total_expense],
+                    marker=dict(colors=['#27ae60', '#e74c3c']),
+                    hole=0.4
+                )])
+                fig.update_layout(height=400)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                # Fallback: عرض بسيط بالأرقام
+                st.metric("الإيرادات", f"{total_revenue:,.2f} ج.م")
+                st.metric("المصروفات", f"{total_expense:,.2f} ج.م")
+                if total_revenue + total_expense > 0:
+                    st.progress(total_revenue / (total_revenue + total_expense))
+                    st.caption(f"نسبة الإيرادات: {total_revenue/(total_revenue + total_expense)*100:.1f}%")
         
         # رسم بياني شهري
         st.subheader("📊 المقارنة الشهرية")
@@ -275,28 +299,32 @@ if page == "🏠 لوحة التحكم":
             monthly = df.groupby(['month', 'type'])['amount'].sum().unstack(fill_value=0)
             
             if not monthly.empty:
-                fig = go.Figure()
-                if 'revenue' in monthly.columns:
-                    fig.add_trace(go.Bar(
-                        x=monthly.index,
-                        y=monthly['revenue'],
-                        name='الإيرادات',
-                        marker_color='#27ae60'
-                    ))
-                if 'expense' in monthly.columns:
-                    fig.add_trace(go.Bar(
-                        x=monthly.index,
-                        y=monthly['expense'],
-                        name='المصروفات',
-                        marker_color='#e74c3c'
-                    ))
-                fig.update_layout(
-                    height=400,
-                    barmode='group',
-                    showlegend=True,
-                    plot_bgcolor='white'
-                )
-                st.plotly_chart(fig, use_container_width=True)
+                if PLOTLY_AVAILABLE:
+                    fig = go.Figure()
+                    if 'revenue' in monthly.columns:
+                        fig.add_trace(go.Bar(
+                            x=monthly.index,
+                            y=monthly['revenue'],
+                            name='الإيرادات',
+                            marker_color='#27ae60'
+                        ))
+                    if 'expense' in monthly.columns:
+                        fig.add_trace(go.Bar(
+                            x=monthly.index,
+                            y=monthly['expense'],
+                            name='المصروفات',
+                            marker_color='#e74c3c'
+                        ))
+                    fig.update_layout(
+                        height=400,
+                        barmode='group',
+                        showlegend=True,
+                        plot_bgcolor='white'
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    # Fallback: استخدام Streamlit bar chart
+                    st.bar_chart(monthly)
     else:
         st.info("📭 لا توجد معاملات في هذه الفترة. ابدأ بإضافة معاملاتك!")
 
