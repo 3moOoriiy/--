@@ -10,56 +10,187 @@ try:
     PLOTLY_AVAILABLE = True
 except ImportError:
     PLOTLY_AVAILABLE = False
-    st.warning("⚠️ Plotly غير مثبت. سيتم استخدام الرسوم البيانية الأساسية من Streamlit.")
 
 # إعدادات الصفحة
 st.set_page_config(
     page_title="نظام إدارة الأرباح والخسائر",
-    page_icon="💰",
+    page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# CSS مخصص للتصميم الاحترافي
+# CSS مخصص للتصميم المطابق للصورة بالضبط
 st.markdown("""
 <style>
+    /* إخفاء العناصر الافتراضية */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* الخلفية العامة */
     .main {
+        background-color: #f0f2f6;
         direction: rtl;
         text-align: right;
     }
     
-    .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 20px;
-        border-radius: 10px;
+    .block-container {
+        padding: 0 !important;
+        max-width: 100% !important;
+    }
+    
+    /* Header الأزرق الغامق */
+    .custom-header {
+        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+        padding: 22px 40px;
         color: white;
-        text-align: center;
+        text-align: right;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     
-    .profit {
-        color: #27ae60;
-        font-weight: bold;
+    .custom-header h1 {
+        margin: 0;
         font-size: 24px;
+        font-weight: 700;
+        display: inline-block;
     }
     
-    .loss {
-        color: #e74c3c;
-        font-weight: bold;
+    .custom-header .icon {
         font-size: 24px;
+        margin-left: 10px;
     }
     
-    .stButton>button {
-        width: 100%;
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-        color: white;
-        border: none;
-        padding: 10px 20px;
+    .custom-header p {
+        margin: 5px 0 0 0;
+        font-size: 12px;
+        opacity: 0.95;
+        font-weight: 400;
+    }
+    
+    /* Content Area */
+    .content-wrapper {
+        padding: 25px 40px;
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0;
+        background-color: white;
+        padding: 0 40px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        padding: 16px 28px;
+        background-color: transparent;
+        border-bottom: 2px solid transparent;
+        color: #6b7280;
+        font-weight: 500;
+        font-size: 14px;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background-color: transparent;
+        border-bottom-color: #2563eb;
+        color: #1f2937;
+    }
+    
+    /* Filter Buttons */
+    .stButton button {
+        background: white;
+        color: #374151;
+        border: 1px solid #d1d5db;
         border-radius: 8px;
-        font-weight: bold;
+        padding: 9px 18px;
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.2s;
     }
     
-    h1, h2, h3 {
-        text-align: right !important;
+    .stButton button:hover {
+        background: #f9fafb;
+        border-color: #9ca3af;
+    }
+    
+    /* الكروت */
+    .metric-card {
+        background: white;
+        padding: 24px 20px;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        text-align: center;
+        border: 1px solid #e5e7eb;
+        height: 130px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .metric-label {
+        font-size: 13px;
+        color: #6b7280;
+        margin-bottom: 14px;
+        font-weight: 500;
+    }
+    
+    .metric-value {
+        font-size: 28px;
+        font-weight: 700;
+        line-height: 1;
+    }
+    
+    .metric-value.green {
+        color: #10b981;
+    }
+    
+    .metric-value.red {
+        color: #ef4444;
+    }
+    
+    .metric-unit {
+        font-size: 14px;
+        margin-right: 4px;
+        font-weight: 600;
+    }
+    
+    /* Charts Container */
+    .chart-box {
+        background: white;
+        padding: 22px;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        border: 1px solid #e5e7eb;
+        margin-bottom: 20px;
+    }
+    
+    .chart-title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 18px;
+        color: #1f2937;
+        text-align: right;
+    }
+    
+    /* Form styling */
+    .stSelectbox, .stNumberInput, .stTextArea, .stDateInput {
+        font-size: 14px;
+    }
+    
+    /* Table styling */
+    .dataframe {
+        font-size: 13px;
+        border: 1px solid #e5e7eb !important;
+        border-radius: 8px;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .content-wrapper {
+            padding: 20px;
+        }
+        .custom-header {
+            padding: 18px 20px;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -67,6 +198,8 @@ st.markdown("""
 # تهيئة البيانات في Session State
 if 'transactions' not in st.session_state:
     st.session_state.transactions = []
+if 'current_period' not in st.session_state:
+    st.session_state.current_period = 'all'
 
 # دوال مساعدة
 def load_transactions():
@@ -139,86 +272,93 @@ def calculate_stats(transactions):
 # تحميل البيانات عند البداية
 load_transactions()
 
-# العنوان الرئيسي
-st.title("💰 نظام إدارة الأرباح والخسائر الاحترافي")
-st.markdown("---")
+# Header مخصص
+st.markdown("""
+<div class="custom-header">
+    <span class="icon">📊</span><h1 style="display: inline;">نظام إدارة الأرباح والخسائر</h1>
+    <p>تتبع ميزانيتك وأرباحك بشكل احترافي</p>
+</div>
+""", unsafe_allow_html=True)
 
-# الشريط الجانبي - القائمة
-with st.sidebar:
-    st.header("📋 القائمة")
-    page = st.radio(
-        "اختر الصفحة:",
-        ["🏠 لوحة التحكم", "➕ إضافة معاملة", "📊 المعاملات", "📈 التقارير"],
-        label_visibility="collapsed"
-    )
-    
-    st.markdown("---")
-    
-    # فلتر الفترة الزمنية
-    if page == "🏠 لوحة التحكم":
-        st.subheader("🕐 الفترة الزمنية")
-        period = st.selectbox(
-            "اختر الفترة:",
-            ["all", "month", "week", "today"],
-            format_func=lambda x: {
-                "all": "الكل",
-                "month": "هذا الشهر",
-                "week": "هذا الأسبوع",
-                "today": "اليوم"
-            }[x]
-        )
-    else:
-        period = "all"
+# Tabs
+tab1, tab2, tab3, tab4 = st.tabs(["لوحة التحكم", "المعاملات", "التقارير", "إضافة معاملة"])
 
-# صفحة لوحة التحكم
-if page == "🏠 لوحة التحكم":
-    st.header("📊 لوحة التحكم")
+# Tab 1: لوحة التحكم
+with tab1:
+    st.markdown('<div class="content-wrapper">', unsafe_allow_html=True)
+    
+    # Filter Buttons في صف واحد على اليمين
+    col_space, col_btn1, col_btn2, col_btn3, col_btn4 = st.columns([4, 1, 1.2, 1.2, 0.8])
+    
+    with col_btn4:
+        if st.button("الكل", key="all"):
+            st.session_state.current_period = 'all'
+            st.rerun()
+    with col_btn3:
+        if st.button("هذا الشهر", key="month"):
+            st.session_state.current_period = 'month'
+            st.rerun()
+    with col_btn2:
+        if st.button("هذا الأسبوع", key="week"):
+            st.session_state.current_period = 'week'
+            st.rerun()
+    with col_btn1:
+        if st.button("اليوم", key="today"):
+            st.session_state.current_period = 'today'
+            st.rerun()
+    
+    st.markdown("<div style='margin: 20px 0;'></div>", unsafe_allow_html=True)
     
     # الحصول على المعاملات المفلترة
-    filtered_trans = get_filtered_transactions(period)
+    filtered_trans = get_filtered_transactions(st.session_state.current_period)
     total_revenue, total_expense, net_profit, profit_margin = calculate_stats(filtered_trans)
     
-    # عرض الإحصائيات الرئيسية
+    # الكروت الرئيسية - 4 كروت متساوية
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric(
-            label="💵 إجمالي الإيرادات",
-            value=f"{total_revenue:,.2f} ج.م",
-            delta=None
-        )
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">إجمالي الإيرادات</div>
+            <div class="metric-value green">{total_revenue:.2f} <span class="metric-unit">ج.م</span></div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
-        st.metric(
-            label="💸 إجمالي المصروفات",
-            value=f"{total_expense:,.2f} ج.م",
-            delta=None
-        )
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">إجمالي المصروفات</div>
+            <div class="metric-value red">{total_expense:.2f} <span class="metric-unit">ج.م</span></div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col3:
-        profit_delta = "ربح" if net_profit >= 0 else "خسارة"
-        st.metric(
-            label="💰 صافي الربح/الخسارة",
-            value=f"{net_profit:,.2f} ج.م",
-            delta=profit_delta,
-            delta_color="normal" if net_profit >= 0 else "inverse"
-        )
+        profit_color = "green" if net_profit >= 0 else "red"
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">صافي الربح/الخسارة</div>
+            <div class="metric-value {profit_color}">{net_profit:.2f} <span class="metric-unit">ج.م</span></div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col4:
-        st.metric(
-            label="📊 نسبة الربح",
-            value=f"{profit_margin:.2f}%",
-            delta=None
-        )
+        margin_color = "green" if profit_margin >= 0 else "red"
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">نسبة الربح</div>
+            <div class="metric-value {margin_color}">{profit_margin:.2f}%</div>
+        </div>
+        """, unsafe_allow_html=True)
     
-    st.markdown("---")
+    st.markdown("<div style='margin: 25px 0;'></div>", unsafe_allow_html=True)
     
     # الرسوم البيانية
-    if filtered_trans:
-        col1, col2 = st.columns(2)
+    if filtered_trans and PLOTLY_AVAILABLE:
+        col_chart1, col_chart2 = st.columns([1, 1])
         
-        with col1:
-            st.subheader("📈 الإيرادات vs المصروفات (آخر 7 أيام)")
+        with col_chart1:
+            st.markdown('<div class="chart-box">', unsafe_allow_html=True)
+            st.markdown('<div class="chart-title">📈 الإيرادات vs المصروفات (آخر 7 أيام)</div>', unsafe_allow_html=True)
             
             # إعداد البيانات لآخر 7 أيام
             dates = pd.date_range(end=pd.Timestamp.now(), periods=7).date
@@ -234,151 +374,81 @@ if page == "🏠 لوحة التحكم":
                 revenue_data.append(rev)
                 expense_data.append(exp)
             
-            if PLOTLY_AVAILABLE:
-                # رسم بياني خطي
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(
-                    x=[d.strftime('%a') for d in dates],
-                    y=revenue_data,
-                    name='الإيرادات',
-                    line=dict(color='#27ae60', width=3),
-                    fill='tozeroy'
-                ))
-                fig.add_trace(go.Scatter(
-                    x=[d.strftime('%a') for d in dates],
-                    y=expense_data,
-                    name='المصروفات',
-                    line=dict(color='#e74c3c', width=3),
-                    fill='tozeroy'
-                ))
-                fig.update_layout(
-                    height=400,
-                    showlegend=True,
-                    hovermode='x unified',
-                    plot_bgcolor='white'
-                )
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                # Fallback: استخدام Streamlit line chart
-                chart_df = pd.DataFrame({
-                    'التاريخ': [d.strftime('%a') for d in dates],
-                    'الإيرادات': revenue_data,
-                    'المصروفات': expense_data
-                })
-                st.line_chart(chart_df.set_index('التاريخ'))
+            # رسم بياني خطي
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=list(range(7)),
+                y=revenue_data,
+                name='الإيرادات',
+                line=dict(color='#10b981', width=2),
+                mode='lines',
+                fill='tozeroy',
+                fillcolor='rgba(16, 185, 129, 0.1)'
+            ))
+            fig.add_trace(go.Scatter(
+                x=list(range(7)),
+                y=expense_data,
+                name='المصروفات',
+                line=dict(color='#ef4444', width=2),
+                mode='lines',
+                fill='tozeroy',
+                fillcolor='rgba(239, 68, 68, 0.1)'
+            ))
+            fig.update_layout(
+                height=280,
+                showlegend=True,
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                plot_bgcolor='white',
+                paper_bgcolor='white',
+                margin=dict(l=40, r=20, t=10, b=40),
+                xaxis=dict(showgrid=True, gridcolor='#f3f4f6', tickmode='linear'),
+                yaxis=dict(showgrid=True, gridcolor='#f3f4f6'),
+                font=dict(size=11)
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
         
-        with col2:
-            st.subheader("🥧 توزيع الإيرادات والمصروفات")
+        with col_chart2:
+            st.markdown('<div class="chart-box">', unsafe_allow_html=True)
+            st.markdown('<div class="chart-title">🥧 توزيع الإيرادات والمصروفات</div>', unsafe_allow_html=True)
             
-            if PLOTLY_AVAILABLE:
-                # رسم دائري
+            # رسم دائري
+            if total_revenue > 0 or total_expense > 0:
                 fig = go.Figure(data=[go.Pie(
                     labels=['الإيرادات', 'المصروفات'],
                     values=[total_revenue, total_expense],
-                    marker=dict(colors=['#27ae60', '#e74c3c']),
-                    hole=0.4
+                    marker=dict(colors=['#10b981', '#ef4444']),
+                    hole=0.5,
+                    textinfo='label+percent',
+                    textposition='outside',
+                    textfont=dict(size=12)
                 )])
-                fig.update_layout(height=400)
+                fig.update_layout(
+                    height=280,
+                    showlegend=False,
+                    margin=dict(l=20, r=20, t=10, b=20),
+                    paper_bgcolor='white'
+                )
                 st.plotly_chart(fig, use_container_width=True)
             else:
-                # Fallback: عرض بسيط بالأرقام
-                st.metric("الإيرادات", f"{total_revenue:,.2f} ج.م")
-                st.metric("المصروفات", f"{total_expense:,.2f} ج.م")
-                if total_revenue + total_expense > 0:
-                    st.progress(total_revenue / (total_revenue + total_expense))
-                    st.caption(f"نسبة الإيرادات: {total_revenue/(total_revenue + total_expense)*100:.1f}%")
-        
-        # رسم بياني شهري
-        st.subheader("📊 المقارنة الشهرية")
-        
-        if st.session_state.transactions:
-            df = pd.DataFrame(st.session_state.transactions)
-            df['date'] = pd.to_datetime(df['date'])
-            df['month'] = df['date'].dt.to_period('M').astype(str)
+                st.info("لا توجد بيانات لعرضها")
             
-            monthly = df.groupby(['month', 'type'])['amount'].sum().unstack(fill_value=0)
-            
-            if not monthly.empty:
-                if PLOTLY_AVAILABLE:
-                    fig = go.Figure()
-                    if 'revenue' in monthly.columns:
-                        fig.add_trace(go.Bar(
-                            x=monthly.index,
-                            y=monthly['revenue'],
-                            name='الإيرادات',
-                            marker_color='#27ae60'
-                        ))
-                    if 'expense' in monthly.columns:
-                        fig.add_trace(go.Bar(
-                            x=monthly.index,
-                            y=monthly['expense'],
-                            name='المصروفات',
-                            marker_color='#e74c3c'
-                        ))
-                    fig.update_layout(
-                        height=400,
-                        barmode='group',
-                        showlegend=True,
-                        plot_bgcolor='white'
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
-                else:
-                    # Fallback: استخدام Streamlit bar chart
-                    st.bar_chart(monthly)
-    else:
-        st.info("📭 لا توجد معاملات في هذه الفترة. ابدأ بإضافة معاملاتك!")
-
-# صفحة إضافة معاملة
-elif page == "➕ إضافة معاملة":
-    st.header("➕ إضافة معاملة جديدة")
+            st.markdown('</div>', unsafe_allow_html=True)
     
-    with st.form("add_transaction_form", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            trans_type = st.selectbox(
-                "نوع المعاملة *",
-                ["revenue", "expense"],
-                format_func=lambda x: "إيراد" if x == "revenue" else "مصروف"
-            )
-            
-            amount = st.number_input(
-                "المبلغ (جنيه) *",
-                min_value=0.0,
-                step=0.01,
-                format="%.2f"
-            )
-        
-        with col2:
-            category = st.selectbox(
-                "الفئة *",
-                ["مبيعات", "خدمات", "رواتب", "إيجار", "مواد خام", "تسويق", "مرافق", "صيانة", "أخرى"]
-            )
-            
-            date = st.date_input(
-                "التاريخ *",
-                value=datetime.now()
-            )
-        
-        description = st.text_area("الوصف", height=100)
-        
-        submitted = st.form_submit_button("💾 حفظ المعاملة")
-        
-        if submitted:
-            if amount > 0:
-                add_transaction(trans_type, category, amount, date, description)
-                st.success("✅ تم إضافة المعاملة بنجاح!")
-                st.balloons()
-            else:
-                st.error("⚠️ يرجى إدخال مبلغ أكبر من صفر")
+    elif not filtered_trans:
+        st.info("📭 لا توجد معاملات في هذه الفترة. ابدأ بإضافة معاملاتك من تبويب 'إضافة معاملة'")
+    elif not PLOTLY_AVAILABLE:
+        st.warning("⚠️ مكتبة Plotly غير متاحة. الرسوم البيانية معطلة مؤقتاً.")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# صفحة المعاملات
-elif page == "📊 المعاملات":
-    st.header("📊 جميع المعاملات")
+# Tab 2: المعاملات
+with tab2:
+    st.markdown('<div class="content-wrapper">', unsafe_allow_html=True)
     
     if st.session_state.transactions:
         # فلاتر
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3 = st.columns([2, 2, 1])
         
         with col1:
             filter_type = st.selectbox(
@@ -392,7 +462,8 @@ elif page == "📊 المعاملات":
             filter_category = st.selectbox("الفئة", categories)
         
         with col3:
-            if st.button("🔄 مسح الفلاتر"):
+            st.markdown("<div style='margin-top: 32px;'></div>", unsafe_allow_html=True)
+            if st.button("🔄 مسح"):
                 st.rerun()
         
         # تطبيق الفلاتر
@@ -417,7 +488,8 @@ elif page == "📊 المعاملات":
             st.dataframe(
                 display_df,
                 use_container_width=True,
-                hide_index=True
+                hide_index=True,
+                height=400
             )
             
             # خيار الحذف
@@ -430,22 +502,23 @@ elif page == "📊 المعاملات":
                 format_func=lambda t: f"{t['date']} - {t['category']} - {t['amount']} ج.م"
             )
             
-            if st.button("🗑️ حذف المعاملة المحددة", type="secondary"):
+            if st.button("حذف المعاملة", type="primary"):
                 delete_transaction(trans_to_delete['id'])
                 st.success("✅ تم حذف المعاملة بنجاح!")
                 st.rerun()
         else:
             st.info("لا توجد معاملات تطابق الفلتر المحدد")
     else:
-        st.info("📭 لا توجد معاملات حتى الآن. ابدأ بإضافة معاملاتك!")
+        st.info("📭 لا توجد معاملات حتى الآن")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# صفحة التقارير
-elif page == "📈 التقارير":
-    st.header("📈 التقارير المفصلة")
+# Tab 3: التقارير
+with tab3:
+    st.markdown('<div class="content-wrapper">', unsafe_allow_html=True)
     
     if st.session_state.transactions:
-        # اختيار الفترة
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns([2, 2, 1])
         
         with col1:
             date_from = st.date_input("من تاريخ:", value=datetime.now() - timedelta(days=30))
@@ -453,8 +526,11 @@ elif page == "📈 التقارير":
         with col2:
             date_to = st.date_input("إلى تاريخ:", value=datetime.now())
         
-        if st.button("📊 إنشاء التقرير"):
-            # فلترة حسب التاريخ
+        with col3:
+            st.markdown("<div style='margin-top: 32px;'></div>", unsafe_allow_html=True)
+            generate_btn = st.button("📊 إنشاء", type="primary")
+        
+        if generate_btn:
             df = pd.DataFrame(st.session_state.transactions)
             df['date'] = pd.to_datetime(df['date']).dt.date
             
@@ -468,7 +544,6 @@ elif page == "📈 التقارير":
                 total_expense = expenses['amount'].sum()
                 net_profit = total_revenue - total_expense
                 
-                # عرض الإحصائيات
                 st.markdown("### 📊 ملخص التقرير")
                 
                 col1, col2, col3 = st.columns(3)
@@ -480,34 +555,9 @@ elif page == "📈 التقارير":
                     st.metric("إجمالي المصروفات", f"{total_expense:,.2f} ج.م")
                 
                 with col3:
-                    st.metric(
-                        "صافي الربح",
-                        f"{net_profit:,.2f} ج.م",
-                        delta="ربح" if net_profit >= 0 else "خسارة"
-                    )
+                    st.metric("صافي الربح", f"{net_profit:,.2f} ج.م")
                 
                 st.markdown("---")
-                
-                # التفاصيل حسب الفئة
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.markdown("### 📈 الإيرادات حسب الفئة")
-                    if not revenues.empty:
-                        revenue_by_cat = revenues.groupby('category')['amount'].sum().sort_values(ascending=False)
-                        for cat, amount in revenue_by_cat.items():
-                            st.write(f"**{cat}:** {amount:,.2f} ج.م")
-                
-                with col2:
-                    st.markdown("### 📉 المصروفات حسب الفئة")
-                    if not expenses.empty:
-                        expense_by_cat = expenses.groupby('category')['amount'].sum().sort_values(ascending=False)
-                        for cat, amount in expense_by_cat.items():
-                            st.write(f"**{cat}:** {amount:,.2f} ج.م")
-                
-                # تصدير البيانات
-                st.markdown("---")
-                st.markdown("### 📥 تصدير البيانات")
                 
                 col1, col2 = st.columns(2)
                 
@@ -517,7 +567,8 @@ elif page == "📈 التقارير":
                         label="📥 تحميل CSV",
                         data=csv,
                         file_name=f"report_{date_from}_{date_to}.csv",
-                        mime="text/csv"
+                        mime="text/csv",
+                        use_container_width=True
                     )
                 
                 with col2:
@@ -526,16 +577,55 @@ elif page == "📈 التقارير":
                         label="📥 تحميل JSON",
                         data=json_data,
                         file_name=f"report_{date_from}_{date_to}.json",
-                        mime="application/json"
+                        mime="application/json",
+                        use_container_width=True
                     )
             else:
                 st.warning("⚠️ لا توجد معاملات في هذه الفترة")
     else:
         st.info("📭 لا توجد معاملات لإنشاء التقرير")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# Footer
-st.markdown("---")
-st.markdown(
-    "<div style='text-align: center; color: #7f8c8d;'>💰 نظام إدارة الأرباح والخسائر | تم التطوير بواسطة Streamlit</div>",
-    unsafe_allow_html=True
-)
+# Tab 4: إضافة معاملة
+with tab4:
+    st.markdown('<div class="content-wrapper">', unsafe_allow_html=True)
+    
+    with st.form("add_transaction_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            trans_type = st.selectbox(
+                "نوع المعاملة *",
+                ["revenue", "expense"],
+                format_func=lambda x: "إيراد" if x == "revenue" else "مصروف"
+            )
+            
+            amount = st.number_input(
+                "المبلغ (جنيه) *",
+                min_value=0.0,
+                step=0.01,
+                format="%.2f"
+            )
+        
+        with col2:
+            category = st.selectbox(
+                "الفئة *",
+                ["مبيعات", "خدمات", "رواتب", "إيجار", "مواد خام", "تسويق", "مرافق", "صيانة", "أخرى"]
+            )
+            
+            date = st.date_input("التاريخ *", value=datetime.now())
+        
+        description = st.text_area("الوصف", height=100)
+        
+        submitted = st.form_submit_button("💾 حفظ المعاملة", type="primary", use_container_width=True)
+        
+        if submitted:
+            if amount > 0:
+                add_transaction(trans_type, category, amount, date, description)
+                st.success("✅ تم إضافة المعاملة بنجاح!")
+                st.balloons()
+            else:
+                st.error("⚠️ يرجى إدخال مبلغ أكبر من صفر")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
