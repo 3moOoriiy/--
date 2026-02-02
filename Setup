@@ -1,69 +1,64 @@
-#!/bin/bash
+@echo off
+REM 🚀 سكريبت التثبيت السريع لـ Windows
+REM Quick Setup Script for Windows
 
-# 🚀 سكريبت التثبيت السريع | Quick Setup Script
-# يمكن تشغيل هذا الملف لتثبيت وتشغيل المشروع تلقائياً
+echo ======================================
+echo 💰 نظام إدارة الأرباح والخسائر
+echo Profit ^& Loss Management System
+echo ======================================
+echo.
 
-echo "======================================"
-echo "💰 نظام إدارة الأرباح والخسائر"
-echo "Profit & Loss Management System"
-echo "======================================"
-echo ""
+REM التحقق من وجود Python
+python --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo ❌ Python غير مثبت!
+    echo ❌ Python is not installed!
+    echo يرجى تثبيت Python من: https://www.python.org/downloads/
+    pause
+    exit /b 1
+)
 
-# التحقق من وجود Python
-if ! command -v python3 &> /dev/null; then
-    echo "❌ Python 3 غير مثبت!"
-    echo "❌ Python 3 is not installed!"
-    echo "يرجى تثبيت Python من: https://www.python.org/downloads/"
-    exit 1
-fi
+echo ✅ Python مثبت
+echo.
 
-echo "✅ Python مثبت"
-echo ""
+REM إنشاء بيئة افتراضية
+echo 📦 إنشاء بيئة افتراضية...
+echo 📦 Creating virtual environment...
+python -m venv venv
 
-# إنشاء بيئة افتراضية
-echo "📦 إنشاء بيئة افتراضية..."
-echo "📦 Creating virtual environment..."
-python3 -m venv venv
+REM تفعيل البيئة الافتراضية
+echo ✨ تفعيل البيئة الافتراضية...
+echo ✨ Activating virtual environment...
+call venv\Scripts\activate.bat
 
-# تفعيل البيئة الافتراضية
-echo "✨ تفعيل البيئة الافتراضية..."
-echo "✨ Activating virtual environment..."
+REM تحديث pip
+echo ⬆️ تحديث pip...
+echo ⬆️ Updating pip...
+python -m pip install --upgrade pip
 
-# للأنظمة المختلفة
-if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
-    # Windows
-    source venv/Scripts/activate
-else
-    # Mac/Linux
-    source venv/bin/activate
-fi
-
-# تحديث pip
-echo "⬆️ تحديث pip..."
-echo "⬆️ Updating pip..."
-pip install --upgrade pip
-
-# تثبيت المتطلبات
-echo "📥 تثبيت المكتبات المطلوبة..."
-echo "📥 Installing required packages..."
+REM تثبيت المتطلبات
+echo 📥 تثبيت المكتبات المطلوبة...
+echo 📥 Installing required packages...
 pip install -r requirements.txt
 
-echo ""
-echo "======================================"
-echo "✅ تم التثبيت بنجاح!"
-echo "✅ Installation completed successfully!"
-echo "======================================"
-echo ""
+echo.
+echo ======================================
+echo ✅ تم التثبيت بنجاح!
+echo ✅ Installation completed successfully!
+echo ======================================
+echo.
 
-# تشغيل التطبيق
-echo "🚀 تشغيل التطبيق..."
-echo "🚀 Starting the application..."
-echo ""
-echo "التطبيق سيعمل على: http://localhost:8501"
-echo "The app will run on: http://localhost:8501"
-echo ""
-echo "للإيقاف اضغط: Ctrl+C"
-echo "To stop press: Ctrl+C"
-echo ""
+REM تشغيل التطبيق
+echo 🚀 تشغيل التطبيق...
+echo 🚀 Starting the application...
+echo.
+echo التطبيق سيعمل على: http://localhost:8501
+echo The app will run on: http://localhost:8501
+echo.
+echo للإيقاف اضغط: Ctrl+C
+echo To stop press: Ctrl+C
+echo.
 
 streamlit run app.py
+
+pause
