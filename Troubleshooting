@@ -1,0 +1,243 @@
+# 🔧 دليل حل المشاكل | Troubleshooting Guide
+
+## المشكلة: ModuleNotFoundError - plotly
+
+### ✅ الحل السريع | Quick Fix
+
+#### الطريقة 1: إعادة تثبيت المكتبات
+```bash
+# احذف المكتبات القديمة
+pip uninstall plotly streamlit pandas -y
+
+# ثبت المكتبات من جديد
+pip install -r requirements.txt
+
+# أو ثبتهم واحدة واحدة
+pip install streamlit
+pip install pandas
+pip install plotly
+```
+
+#### الطريقة 2: استخدام بيئة افتراضية جديدة
+```bash
+# Windows
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+
+# Mac/Linux
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+#### الطريقة 3: تحديث pip
+```bash
+# تحديث pip أولاً
+pip install --upgrade pip
+
+# ثم تثبيت المكتبات
+pip install -r requirements.txt
+```
+
+---
+
+## المشكلة: التطبيق لا يعمل على Streamlit Cloud
+
+### ✅ الحل:
+
+1. **تأكد من ملف requirements.txt**
+   - يجب أن يكون في نفس مستوى app.py
+   - يجب أن يحتوي على:
+     ```
+     streamlit>=1.28.0
+     pandas>=2.0.0
+     plotly>=5.17.0
+     ```
+
+2. **تحقق من Python Version**
+   - Streamlit Cloud يدعم Python 3.8-3.11
+   - أضف ملف `.python-version` إذا احتجت إصدار محدد:
+     ```
+     3.10
+     ```
+
+3. **انتظر قليلاً**
+   - أحياناً يستغرق النشر 5-10 دقائق
+   - راقب Logs في Streamlit Cloud
+
+---
+
+## المشكلة: البيانات لا تُحفظ
+
+### ✅ الحل:
+
+البيانات تُحفظ في ملف `transactions.json` محلياً فقط.
+
+**على Streamlit Cloud:**
+- البيانات لن تُحفظ بين الـ restarts
+- استخدم قاعدة بيانات خارجية مثل:
+  - **SQLite** (للمشاريع الصغيرة)
+  - **PostgreSQL** (للإنتاج)
+  - **Google Sheets API**
+  - **Supabase** (مجاني وسهل)
+
+---
+
+## المشكلة: خطأ في encoding العربي
+
+### ✅ الحل:
+
+أضف هذا في أول ملف app.py:
+```python
+# -*- coding: utf-8 -*-
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
+```
+
+---
+
+## المشكلة: الرسوم البيانية لا تظهر
+
+### ✅ الحل:
+
+التطبيق الجديد يحتوي على **fallback system**:
+- إذا Plotly لم يعمل، سيستخدم Streamlit charts الأساسية
+- تأكد من تثبيت plotly بشكل صحيح
+- جرب:
+  ```bash
+  pip install plotly --upgrade
+  ```
+
+---
+
+## المشكلة: Memory Error على Streamlit Cloud
+
+### ✅ الحل:
+
+Streamlit Cloud المجاني محدود بـ 1GB RAM:
+- قلل عدد المعاملات المعروضة
+- استخدم pagination
+- امسح البيانات القديمة بشكل دوري
+
+---
+
+## المشكلة: التطبيق بطيء
+
+### ✅ الحل:
+
+```python
+# استخدم caching في Streamlit
+@st.cache_data
+def load_transactions():
+    # كود تحميل البيانات
+    pass
+
+@st.cache_data
+def calculate_stats(transactions):
+    # كود الحسابات
+    pass
+```
+
+---
+
+## المشكلة: Git push فشل
+
+### ✅ الحل:
+
+```bash
+# المشكلة: Large files
+# احذف ملفات كبيرة من Git
+git rm --cached large_file.csv
+git commit -m "Remove large file"
+git push
+
+# المشكلة: Authentication
+# استخدم Personal Access Token بدلاً من Password
+# اذهب إلى: https://github.com/settings/tokens
+
+# المشكلة: Merge conflict
+git pull origin main --rebase
+# حل التعارضات يدوياً
+git add .
+git rebase --continue
+git push
+```
+
+---
+
+## أوامر مفيدة | Useful Commands
+
+### فحص المكتبات المثبتة
+```bash
+pip list
+pip show plotly
+pip show streamlit
+```
+
+### إعادة تشغيل Streamlit
+```bash
+# أوقف التطبيق (Ctrl+C)
+# ثم شغله من جديد
+streamlit run app.py
+```
+
+### مسح الـ cache
+```bash
+streamlit cache clear
+```
+
+### فحص logs
+```bash
+# على الجهاز المحلي
+# شاهد Terminal للأخطاء
+
+# على Streamlit Cloud
+# اضغط "Manage app" → "Logs"
+```
+
+---
+
+## التواصل للدعم | Support
+
+إذا استمرت المشاكل:
+
+1. **افحص Streamlit Docs:**
+   https://docs.streamlit.io/
+
+2. **شوف Plotly Docs:**
+   https://plotly.com/python/
+
+3. **Streamlit Community:**
+   https://discuss.streamlit.io/
+
+4. **Stack Overflow:**
+   ابحث عن: `streamlit arabic` أو `plotly error`
+
+---
+
+## ✅ Checklist قبل النشر
+
+- [ ] المكتبات مثبتة بنجاح (`pip list`)
+- [ ] التطبيق يعمل محلياً (`streamlit run app.py`)
+- [ ] ملف requirements.txt موجود وصحيح
+- [ ] .gitignore موجود
+- [ ] تم رفع الكود على GitHub
+- [ ] روابط GitHub صحيحة في README
+- [ ] تم اختبار كل الوظائف
+- [ ] البيانات تُحفظ وتُحمل بشكل صحيح
+
+---
+
+## 🎯 نصائح مهمة | Important Tips
+
+1. **استخدم virtual environment دائماً**
+2. **اعمل commit بعد كل تعديل مهم**
+3. **اختبر محلياً قبل النشر**
+4. **اقرأ error messages بعناية**
+5. **ابحث عن الخطأ في Google**
+
+---
+
+**تم التحديث:** فبراير 2025
+**مطور احترافي؟** ساهم في تحسين هذا الدليل! 🚀
